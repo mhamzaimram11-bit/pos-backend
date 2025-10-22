@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Calculator</title>
+  <style>
+    :root{
+      --bg:#ffffff; --panel:#0b1220; --accent:#7c3aed; --muted:#94a3b8; --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;background:linear-gradient(180deg,#071029 0%,#071a2a 100%);color:#e6eef8}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+
+    .calc{
+      width:360px;max-width:96vw;background:linear-gradient(180deg,var(--panel),#081425);border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.7),0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    .display{
+      background:var(--glass);padding:12px;border-radius:10px;margin-bottom:12px;min-height:64px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:6px;overflow:hidden
+    }
+    .history{font-size:13px;color:var(--muted);opacity:0.9;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;width:100%}
+    .output{font-size:28px;font-weight:600;word-break:break-all}
+
+    .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    button{
+      border:0;padding:16px;border-radius:10px;font-size:18px;cursor:pointer;user-select:none;background:transparent;color:inherit;transition:transform .06s ease,box-shadow .06s ease
+    }
+    button:active{transform:translateY(1px)}
+
+    .btn-num{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));box-shadow:inset 0 -1px 0 rgba(255,255,255,0.02)}
+    .btn-op{background:linear-gradient(180deg,rgba(124,58,237,0.18),rgba(124,58,237,0.12));box-shadow:0 6px 14px rgba(124,58,237,0.08)}
+    .btn-wide{grid-column:span 2}
+    .btn-accent{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));color:var(--muted)}
+
+    .footer{margin-top:12px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+    a{color:inherit;text-decoration:underline}
+
+    @media (max-width:420px){.calc{width:320px;padding:14px}.output{font-size:24px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="calc" role="application" aria-label="Calculator">
+      <section class="display" aria-live="polite">
+        <div id="history" class="history" aria-hidden="true"></div>
+        <div id="output" class="output" role="status">0</div>
+      </section>
+
+      <section class="pad" role="group" aria-label="Calculator buttons">
+        <button class="btn-accent" data-action="clear" title="Clear (C)">C</button>
+        <button class="btn-accent" data-action="back" title="Backspace (Backspace)">⌫</button>
+        <button class="btn-accent" data-action="paren" data-value="(" title="Parentheses">( )</button>
+        <button class="btn-op" data-value="/" title="Divide">÷</button>
+
+        <button class="btn-num" data-value="7">7</button>
+        <button class="btn-num" data-value="8">8</button>
+        <button class="btn-num" data-value="9">9</button>
+        <button class="btn-op" data-value="*" title="Multiply">×</button>
+
+        <button class="btn-num" data-value="4">4</button>
+        <button class="btn-num" data-value="5">5</button>
+        <button class="btn-num" data-value="6">6</button>
+        <button class="btn-op" data-value="-" title="Subtract">−</button>
+
+        <button class="btn-num" data-value="1">1</button>
+        <button class="btn-num" data-value="2">2</button>
+        <button class="btn-num" data-value="3">3</button>
+        <button class="btn-op" data-value="+" title="Add">+</button>
+
+        <button class="btn-num btn-wide" data-value="0">0</button>
+        <button class="btn-num" data-value="." title="Decimal">.</button>
+        <button class="btn-op" data-action="equals" title="Equals (Enter)">=</button>
+      </section>
+
+    
+    </main>
+  </div>
+
+  <script>
+    // Simple expression evaluator using shunting-yard algorithm to avoid using eval().
+    (function(){
+      const outputEl = document.getElementById('output');
+      const historyEl = document.getElementById('history');
+      const pad = document.querySelector('.pad');
+
+      let expr = '';
+
+      function updateDisplay(){
+        outputEl.textContent = expr === '' ? '0' : expr;
+      }
+
+      function pushValue(v){
+        // prevent multiple leading zeros
+        if(expr === '0' && /[0-9]/.test(v)) expr = v;
+        else expr += v;
+        updateDisplay();
+      }
+
+      function clearAll(){ expr = ''; historyEl.textContent=''; updateDisplay(); }
+      function backspace(){ expr = expr.slice(0, -1); updateDisplay(); }
+
+      function toggleParen(){
+        // simple heuristic: open if there are equal or fewer '(' than ')'
+        const open = (expr.match(/\(/g)||[]).length;
+        const close = (expr.match(/\)/g)||[]).length;
+        expr += open <= close ? '(' : ')';
+        updateDisplay();
+      }
+
+      pad.addEventListener('click', (e)=>{
+        const btn = e.target.closest('button');
+        if(!btn) return;
+        const val = btn.dataset.value;
+        const action = btn.dataset.action;
+        if(action === 'clear') return clearAll();
+        if(action === 'back') return backspace();
+        if(action === 'paren') return toggleParen();
+        if(action === 'equals') return calculate();
+        if(val) return pushValue(val);
+      });
+
+      // keyboard support
+      window.addEventListener('keydown', (e)=>{
+        if(e.ctrlKey || e.metaKey) return; // ignore shortcuts
+        if(e.key === 'Enter' || e.key === '=') { e.preventDefault(); return calculate(); }
+        if(e.key === 'Backspace') return backspace();
+        if(e.key.toLowerCase() === 'c') return clearAll();
+        if(e.key === '(' || e.key === ')') return (expr+=e.key, updateDisplay());
+        if(/[0-9]/.test(e.key) || e.key === '.') return (expr+=e.key, updateDisplay());
+        if(e.key === '+'||e.key === '-'||e.key === '*'||e.key === '/'||e.key === '%') { expr+=e.key; updateDisplay(); }
+      });
+
+      function isOp(c){ return ['+','-','*','/','%'].includes(c); }
+      function prec(op){ if(op==='+'||op==='-') return 1; if(op==='*'||op==='/'||op==='%') return 2; return 0; }
+
+      function toRPN(infix){
+        // tokenization
+        const tokens = [];
+        const re = /\d*\.?\d+|[()+\-*/%]/g;
+        let m;
+        while((m=re.exec(infix)) !== null){ tokens.push(m[0]); }
+        const out = [];
+        const ops = [];
+        for(const t of tokens){
+          if(/\d/.test(t[0])){ out.push(t); }
+          else if(isOp(t)){
+            while(ops.length && isOp(ops[ops.length-1]) && prec(ops[ops.length-1]) >= prec(t)){
+              out.push(ops.pop());
+            }
+            ops.push(t);
+          } else if(t === '('){ ops.push(t); }
+          else if(t === ')'){
+            while(ops.length && ops[ops.length-1] !== '(') out.push(ops.pop());
+            if(ops.length && ops[ops.length-1]==='(') ops.pop();
+            else throw new Error('Mismatched parentheses');
+          }
+        }
+        while(ops.length){ const o=ops.pop(); if(o==='('||o===')') throw new Error('Mismatched parentheses'); out.push(o); }
+        return out;
+      }
+
+      function evalRPN(rpn){
+        const st = [];
+        for(const t of rpn){
+          if(/\d/.test(t[0])) st.push(parseFloat(t));
+          else{
+            const b = st.pop(); const a = st.pop();
+            if(typeof a === 'undefined' || typeof b === 'undefined') throw new Error('Bad expression');
+            let res;
+            switch(t){
+              case '+': res = a + b; break;
+              case '-': res = a - b; break;
+              case '*': res = a * b; break;
+              case '/': if(b === 0) throw new Error('Division by zero'); res = a / b; break;
+              case '%': res = a % b; break;
+              default: throw new Error('Unknown operator');
+            }
+            st.push(res);
+          }
+        }
+        if(st.length !== 1) throw new Error('Bad expression');
+        return st[0];
+      }
+
+      function calculate(){
+        if(!expr) return;
+        try{
+          const rpn = toRPN(expr);
+          const val = evalRPN(rpn);
+          historyEl.textContent = expr + ' =';
+          expr = (Math.round((val + Number.EPSILON) * 1e12) / 1e12).toString(); // trim float noise
+          updateDisplay();
+        } catch(err){
+          historyEl.textContent = '';
+          outputEl.textContent = 'Error';
+          expr = '';
+          console.warn(err);
+        }
+      }
+
+      // initial
+      updateDisplay();
+
+    })();
+  </script>
+</body>
+</html>
