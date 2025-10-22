@@ -3,10 +3,9 @@ import * as handlebars from 'nodemailer-handlebars';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
-// Detect whether running from "dist" or "src"
 const templatesPath = existsSync(join(__dirname, 'templates'))
-  ? join(__dirname, 'templates') // when running from dist
-  : join(process.cwd(), 'src', 'email', 'templates'); // when running in dev (start:dev)
+  ? join(__dirname, 'templates')
+  : join(process.cwd(), 'src', 'email', 'templates'); 
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,

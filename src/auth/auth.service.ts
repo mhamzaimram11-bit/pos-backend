@@ -11,6 +11,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { loginDto, SignupDto } from './auth.dto/auth.dto';
 import { userStatus } from 'prisma/databases';
 import { sendVerificationEmail } from 'src/email/mailer.service'; 
+import { MESSAGES } from '@nestjs/core/constants';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,7 @@ export class AuthService {
 
 async sendCode(email: string) {
   const existingUser = await this.prisma.user.findUnique({ where: { email } });
-  if (existingUser) throw new BadRequestException('Email already exists');
+  if (existingUser) throw new BadRequestException( messages.EMAIL_ALREADY_EXISTS);
 
  const verifiedCode = await this.prisma.verificationCode.findFirst({
     where: { email, verified: true },
@@ -36,7 +37,7 @@ async sendCode(email: string) {
 
   await sendVerificationEmail(email, code);
 
-  return { message: 'Verification code sent successfully.' };
+  return { message: messages.VERIFICATION_CODE_SENT };
 }
 
 async verifyCode(email: string, code: string) {
@@ -44,16 +45,16 @@ async verifyCode(email: string, code: string) {
     where: { email, code },
   });
 
-  if (!record) throw new BadRequestException('Invalid code.');
+  if (!record) throw new BadRequestException(messages.INVALID_CODE);
   if (record.expiresAt < new Date())
-    throw new BadRequestException('Code expired.');
+    throw new BadRequestException(messages.CODE_EXPIRED);
 
   await this.prisma.verificationCode.update({
     where: { id: record.id },
     data: { verified: true },
   });
 
-  return { message: 'Email verified successfully.' };
+  return { message:messages.EMAIL_VERIFIED};
 }
 
 async signup(dto: SignupDto) {
@@ -64,7 +65,7 @@ async signup(dto: SignupDto) {
   });
 
   if (!verified)
-    throw new UnauthorizedException('Please verify your email first.');
+    throw new UnauthorizedException(messages.PLEASE_VERIFY_YOUR_EMAIL);
 
   const existingUser = await this.prisma.user.findUnique({ where: { email } });
   if (existingUser)
@@ -78,7 +79,7 @@ async signup(dto: SignupDto) {
 
   await this.prisma.verificationCode.deleteMany({ where: { email } });
 
-  return { message: 'User created successfully.', data: newUser };
+  return { message: messages.USER_CREATED, data: newUser };
 }
 
 async login(dto: loginDto) {

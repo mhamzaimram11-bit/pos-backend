@@ -23,9 +23,6 @@ export class loginDto {
 
   @IsNotEmpty()
   password: string;
-
- 
-
 }
 
 

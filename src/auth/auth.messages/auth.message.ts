@@ -5,7 +5,13 @@ export const messages = {
   LOGIN_SUCCESS: 'Login successful',
   INVALID_PASSWORD: 'Invalid password',
   USER_NOT_FOUND: 'User not Exists',
-  JWT_SECRET_UNDEFINED:"JWT_SECRET is not defined in environment variables",
-  USER_FULLNAME_REQUIRED:'User Full Name Is Required',
-  USER_DATA:" User Data Fetched Successfully"
+  JWT_SECRET_UNDEFINED: 'JWT_SECRET is not defined in environment variables',
+  USER_FULLNAME_REQUIRED: 'User Full Name Is Required',
+  USER_DATA: ' User Data Fetched Successfully',
+  EMAIL_ALREADY_EXISTS: 'Email already exists',
+  VERIFICATION_CODE_SENT: 'Verification code sent successfully.',
+  INVALID_CODE: 'Invalid code.',
+  CODE_EXPIRED: 'Code expired',
+  EMAIL_VERIFIED: 'Email verified successfully.',
+  PLEASE_VERIFY_YOUR_EMAIL: 'Please verify your email first.',
 };
